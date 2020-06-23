@@ -1,0 +1,19 @@
+{
+  "name": "@duyi-edu/duyi-egg",
+  "version": "1.0.0",
+  "description": "该仓库有很多的分支，可以通过下面的做法获取所有分支",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DuYi-Edu/DuYi-Egg.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DuYi-Edu/DuYi-Egg/issues"
+  },
+  "homepage": "https://github.com/DuYi-Edu/DuYi-Egg#readme"
+}
