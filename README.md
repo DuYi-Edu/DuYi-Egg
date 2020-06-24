@@ -35,7 +35,7 @@ router.get("userdetail", "/user/:id", "user.info");
 ## 重定向
 
 ```js
-router.get("/login", "user.login")
+router.get("/login", "user.login");
 router.redirect("/sign-in", "/login");
 ```
 
@@ -156,5 +156,5 @@ router.delete("blog", "/b/:id", controller.blog.destroy); // 删除一篇博客
 
 所以，`egg`没有把`next`函数给予`controller`
 
-<img src="http://mdrs.yuanjin.tech/img/u=1443661320,3779062567&amp;fm=26&amp;gp=0.jpg" alt="img"  />
+![](http://mdrs.yuanjin.tech/img/u=1443661320,3779062567&fm=26&gp=0.jpg)
 
