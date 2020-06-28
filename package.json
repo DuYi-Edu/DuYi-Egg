@@ -17,7 +17,8 @@
   },
   "homepage": "https://github.com/DuYi-Edu/DuYi-Egg#readme",
   "dependencies": {
-    "egg": "^2.26.1"
+    "egg": "^2.26.1",
+    "egg-view-ejs": "^2.0.1"
   },
   "devDependencies": {
     "egg-bin": "^4.14.1"
