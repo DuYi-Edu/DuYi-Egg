@@ -1,16 +1,31 @@
 const Controller = require("egg").Controller;
 
-class HomeController extends Controller {
+module.exports = class extends Controller {
   async index() {
-    await this.ctx.render("home", { title: "服务端渲染的页面" });
-    // const html = await this.ctx.renderView("home", { title: "aaaaa" });
-    // this.ctx.body = html;
-
-    // const html = await this.ctx.renderString("标题：<%= title %>", {
-    //   title: "aaaaa",
-    // });
-    // this.ctx.body = html;
+    // 你能不能进入首页
+    const token = this.ctx.cookies.get("token");
+    if (!token) {
+      this.ctx.redirect("/login");
+      return;
+    }
+    const resp = await this.app.axios.get(
+      `${this.config.$apiBase}/api/user/whoami`,
+      {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (resp.data.code) {
+      // 登录过期或被篡改
+      this.ctx.redirect("/login");
+      return;
+    }
+    const model = {
+      user: resp.data.data,
+    };
+    const resp2 = await this.app.axios.get(`${this.config.$apiBase}/api/local`);
+    model.provinces = resp2.data;
+    await this.ctx.render("home", { title: "首页 - 地区数据库", ...model });
   }
-}
-
-module.exports = HomeController;
+};

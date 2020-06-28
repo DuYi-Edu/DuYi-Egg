@@ -1,0 +1,25 @@
+<% include common/header.ejs %>
+<link rel="stylesheet" href="/public/login.css" />
+<h1>登录页的内容</h1>
+<form action="" method="POST">
+  <div class="form-item">
+    <label>账号：</label>
+    <input type="text" name="loginId" value="<%= loginId %>" />
+  </div>
+  <div class="form-item">
+    <label>密码：</label>
+    <input type="password" name="loginPwd" />
+  </div>
+  <% if (error) { %>
+  <div class="error">
+    <%= error %>
+  </div>
+  <% } %>
+
+  <div class="form-item">
+    <button>登录</button>
+  </div>
+</form>
+<script src="/public/login.js"></script>
+
+<% include common/footer.ejs %>

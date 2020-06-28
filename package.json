@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/DuYi-Edu/DuYi-Egg#readme",
   "dependencies": {
+    "axios": "^0.19.2",
     "egg": "^2.26.1",
     "egg-view-ejs": "^2.0.1"
   },
