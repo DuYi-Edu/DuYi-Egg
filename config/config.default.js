@@ -17,11 +17,4 @@ exports.security = {
   },
 };
 
-exports.middleware = ["mymid"];
-exports.mymid = {
-  a: 1,
-  b: 2,
-  enable: true
-};
-
 exports.$apiBase = "http://study.yuanjin.tech";

@@ -21,7 +21,7 @@ module.exports = (options, app)=>{
       ctx.redirect("/login");
       return;
     }
-    ctx.state.user = resp.data.data;
+    ctx.locals.user = resp.data.data;
     await next();
   }
 }

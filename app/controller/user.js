@@ -4,7 +4,7 @@ module.exports = class extends Controller {
   // 提供登录页面
   async login() {
     const model = {
-      title: "登录 - 地区数据库",
+      title: "登录",
       error: "",
       loginId: "",
     };
@@ -18,7 +18,7 @@ module.exports = class extends Controller {
     if (resp.data.code) {
       // 登录失败
       const model = {
-        title: "登录 - 地区数据库",
+        title: "登录",
         error: resp.data.msg,
         loginId: this.ctx.request.body.loginId,
       };
