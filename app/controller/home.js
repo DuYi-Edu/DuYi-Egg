@@ -2,10 +2,10 @@ const Controller = require("egg").Controller;
 
 module.exports = class extends Controller {
   async index() {
-    const resp = await this.app.axios.get(`${this.config.$apiBase}/api/local`);
+    const provinces = await this.service.local.getProvinces();
     var model = {
       title: "首页",
-      provinces: resp.data,
+      provinces
     };
     await this.ctx.render("home", model);
   }
