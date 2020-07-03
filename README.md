@@ -1,92 +1,58 @@
-# 两种设置方式
+# egg-cluster
 
-框架有两种方式指定运行环境：
+egg内置了一个插件`egg-cluster`，它的作用是在egg启动时，启动多个子进程
 
-1. 通过 `config/env` 文件指定
+因此，egg实际上是运行在多个进程上的应用，这些进程的职责分别为：
+
+- **主进程**，Master 进程：稳定性极高的进程，主要负责管理其他进程。因此，对于egg应用，无须使用`pm2`等工具。
+- **worker进程**：由主进程开启，通常情况下数量和cpu的核数保持一致。worker进程是真正用于处理请求的进程。某次请求具体交给哪个worker进程来处理由主进程调度
+- **Agent进程**：由主进程在启动后开启，只有一个，相当于其他进程的秘书，通常用于做各种脏活累活，比如维持一个长连接。agent进程通常对开发者是隐形的，我们平时并不会接触它。
+
+
+
+# egg-scripts
+
+`egg-scripts`能够提供一些命令，来启动和停止线上环境
+
+1. 安装
 
    ```
-   // config/env
-   prod
+   npm i egg-scripts
    ```
 
-2. 【推荐】通过 `EGG_SERVER_ENV` 环境变量指定运行环境更加方便，比如在生产环境启动应用：
+2. 配置脚本
 
+   ```json
+   {
+     "scripts": {
+       "start": "egg-scripts start --daemon",
+       "stop": "egg-scripts stop"
+     }
+   }
    ```
-   EGG_SERVER_ENV=prod egg-bin dev
+
+3. 运行
+
+   ```shell
+   npm start # 启动
+   npm run stop # 停止
    ```
 
+   
 
+启动命令中支持以下参数：
 
-# 获取运行环境
+- `--title=name`，设置应用全名，默认为`egg-server-${APP_NAME}`
 
-框架提供了变量 `app.config.env` 来表示应用当前的运行环境。
+  - 在停止时，建议指定停止的egg应用名称，否则，如果服务器运行了多个egg应用，将会停止所有的egg应用
 
-若没有指定`config/env`文件，同时也没有指定`EGG_SERVER_ENV`环境变量，`app.config.env`的值由`NODE_ENV`确定
+    ```
+    egg-scripts stop --title=myegg-server
+    ```
 
-确定的方式如下：
-
-| NODE_ENV   | EGG_SERVER_ENV | 说明         |
-| ---------- | -------------- | ------------ |
-| 其他       | local          | 本地开发环境 |
-| test       | unittest       | 单元测试     |
-| production | prod           | 生产环境     |
-
-# 针对环境的配置
-
-egg支持下面这些配置
-
-```
-config
-|- config.default.js
-|- config.prod.js
-|- config.unittest.js
-|- config.local.js
-```
-
-`config.default.js` 为默认的配置文件，所有环境都会加载这个配置文件，一般也会作为开发环境的默认配置文件。
-
-当指定 env 时会同时加载对应的配置文件，并覆盖默认配置文件的同名配置。如 `prod` 环境会加载 `config.prod.js` 和 `config.default.js` 文件，`config.prod.js` 会覆盖 `config.default.js` 的同名配置
-
-例如：
-
-```js
-// config/config.default.js
-exports.cluster = {
-  listen: {
-    port: 7001,
-  },
-};
-
-// config/config.prod.js
-exports.cluster = {
-  listen: {
-    port: 5000,
-  },
-};
-
-```
-
-当为`local`环境时，会使用默认配置7001端口，而当为`prod`环境时，会使用`prod`配置的5000端口
-
-
-
-有的时候，可能需要自定义环境，比如开发阶段，不同的开发者可能使用的开发环境有差异，尽管这很少见。
-
-如果是这种情况，可以设置`EGG_SERVER_ENV`为一个自定义的值，然后配置相应值的`config`文件即可
-
-```js
-// package.json
-{
-	"scripts":{
-		"dev": "EGG_SERVER_ENV=yuanjin egg-bin dev"
-	}
-}
-
-// config/config.yuanjin.js
-exports.cluster = {
-  listen: {
-    port: 6000,
-  },
-};
-```
-
+- `--port=7001` 端口号，默认会读取环境变量 `process.env.PORT`，如未传递将使用框架内置端口 `7001`。
+- `--daemon` 是否允许以守护进程的模式运行。
+- `--env=prod` 框架运行环境，默认会读取环境变量 `process.env.EGG_SERVER_ENV`， 如未传递将使用框架内置环境 `prod`。
+- `--workers=2` 框架 worker 线程数，默认会创建和 CPU 核数相当的 app worker 数，可以充分的利用 CPU 资源。
+- `--https.key` 指定 HTTPS 所需密钥文件的完整路径。
+- `--https.cert` 指定 HTTPS 所需证书文件的完整路径。
