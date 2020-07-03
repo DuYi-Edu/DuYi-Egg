@@ -4,7 +4,8 @@
   "description": "该仓库有很多的分支，可以通过下面的做法获取所有分支",
   "main": "index.js",
   "scripts": {
-    "dev": "egg-bin dev"
+    "dev": "egg-bin dev",
+    "prod": "EGG_SERVER_ENV=prod egg-bin dev"
   },
   "repository": {
     "type": "git",
