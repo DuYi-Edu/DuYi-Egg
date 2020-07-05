@@ -1,58 +1,90 @@
-# egg-cluster
+# 编写定时任务
 
-egg内置了一个插件`egg-cluster`，它的作用是在egg启动时，启动多个子进程
+有的时候，我们可能会希望定期做一些事情，比如：
 
-因此，egg实际上是运行在多个进程上的应用，这些进程的职责分别为：
+- 定期更新缓存
+- 定期删除一些不再使用的文件
+- 定期检查数据库，删除无意义的数据
+- 定期爬取一些数据，保存到数据库
+- 等等
 
-- **主进程**，Master 进程：稳定性极高的进程，主要负责管理其他进程。因此，对于egg应用，无须使用`pm2`等工具。
-- **worker进程**：由主进程开启，通常情况下数量和cpu的核数保持一致。worker进程是真正用于处理请求的进程。某次请求具体交给哪个worker进程来处理由主进程调度
-- **Agent进程**：由主进程在启动后开启，只有一个，相当于其他进程的秘书，通常用于做各种脏活累活，比如维持一个长连接。agent进程通常对开发者是隐形的，我们平时并不会接触它。
+尽管我们完全可以通过`setInterval`来处理该问题，但在`egg`中，可以非常简单的完成该操作，你只需要在`app/schedule`文件夹中编写各种任务即可
+
+`egg`启动后，会读取该文件夹中的所有模块，把它们的导出当做任务定期执行
+
+## 方式1
+
+```js
+// app/schedule/cacheLocals
+const Subscription = require("egg").Subscription;
+
+module.exports = class extends Subscription {
+  // 通过 schedule 属性来设置定时任务的执行间隔等配置
+  static get schedule() {
+    return {
+      interval: "5s", // 1 分钟间隔
+      type: "all", // 指定所有的 worker 都需要执行
+    };
+  }
+
+  // subscribe 是真正定时任务执行时被运行的函数
+  async subscribe() {
+    console.log("更新缓存");
+    const key = "province";
+    const resp = await this.app.axios.get(`${this.config.$apiBase}/api/local`);
+    //缓存
+    this.app.redis.set(key, JSON.stringify(resp.data));
+  }
+};
+```
+
+## 方式2
+
+```js
+module.exports = {
+  schedule: {
+    interval: '1m', // 1 分钟间隔
+    type: 'all', // 指定所有的 worker 都需要执行
+  },
+  async task(ctx) { // task 是真正定时任务执行时被运行的函数
+    console.log("更新缓存");
+    const key = "province";
+    const resp = await ctx.app.axios.get(`${ctx.app.config.$apiBase}/api/local`);
+    //缓存
+    ctx.app.redis.set(key, JSON.stringify(resp.data));
+  },
+}
+```
+
+# schedule配置
+
+无论使用哪一种方式，都必须提供`schedule`属性来配置任务
+
+- `interval`：字符串，描述任务执行的间隔时间。参考：https://github.com/vercel/ms
+
+- `cron`：字符串，任务执行的契机，它和`interval`设置一个即可。
+
+  参考：https://github.com/harrisiirak/cron-parser
+
+  在线生成器：https://cron.qqe2.com/
+
+  ```js
+  "* */3 * * * "  // 每隔3分钟执行一次
+  "0 0 * * 3" // 每周3的凌晨执行一次
+  "0 0 24 12 *" // 每年圣诞节执行一次
+  ```
+
+- `type`，任务类型，支持两种配置：
+
+  - `worker`，只有一个 worker 会执行这个定时任务，每次执行定时任务的 worker 的选择是随机的
+  - `all`，每个 worker 都会执行这个定时任务。
+
+- `immediate`，如果设置为`true`，应用启动时会立即执行该任务
+
+- `env`，数组，只有在指定的环境中才会启动该任务
+
+- `disable`，一个开关，表示任务是否被禁用
 
 
 
-# egg-scripts
-
-`egg-scripts`能够提供一些命令，来启动和停止线上环境
-
-1. 安装
-
-   ```
-   npm i egg-scripts
-   ```
-
-2. 配置脚本
-
-   ```json
-   {
-     "scripts": {
-       "start": "egg-scripts start --daemon",
-       "stop": "egg-scripts stop"
-     }
-   }
-   ```
-
-3. 运行
-
-   ```shell
-   npm start # 启动
-   npm run stop # 停止
-   ```
-
-   
-
-启动命令中支持以下参数：
-
-- `--title=name`，设置应用全名，默认为`egg-server-${APP_NAME}`
-
-  - 在停止时，建议指定停止的egg应用名称，否则，如果服务器运行了多个egg应用，将会停止所有的egg应用
-
-    ```
-    egg-scripts stop --title=myegg-server
-    ```
-
-- `--port=7001` 端口号，默认会读取环境变量 `process.env.PORT`，如未传递将使用框架内置端口 `7001`。
-- `--daemon` 是否允许以守护进程的模式运行。
-- `--env=prod` 框架运行环境，默认会读取环境变量 `process.env.EGG_SERVER_ENV`， 如未传递将使用框架内置环境 `prod`。
-- `--workers=2` 框架 worker 线程数，默认会创建和 CPU 核数相当的 app worker 数，可以充分的利用 CPU 资源。
-- `--https.key` 指定 HTTPS 所需密钥文件的完整路径。
-- `--https.cert` 指定 HTTPS 所需证书文件的完整路径。
+> 更多关于任务的操作参考：https://eggjs.org/zh-cn/basics/schedule.html
