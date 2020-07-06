@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "egg-bin dev",
-    "start": "egg-scripts --port=5001 start --daemon --title=duyi-egg",
+    "start": "egg-scripts --port=5001 start --title=duyi-egg",
     "stop": "egg-scripts stop --title=duyi-egg"
   },
   "repository": {

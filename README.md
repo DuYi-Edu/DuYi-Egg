@@ -22,7 +22,7 @@ module.exports = class extends Subscription {
   // 通过 schedule 属性来设置定时任务的执行间隔等配置
   static get schedule() {
     return {
-      interval: "5s", // 1 分钟间隔
+      interval: "1m", // 1 分钟间隔
       type: "all", // 指定所有的 worker 都需要执行
     };
   }
@@ -69,9 +69,9 @@ module.exports = {
   在线生成器：https://cron.qqe2.com/
 
   ```js
-  "* */3 * * * "  // 每隔3分钟执行一次
-  "0 0 * * 3" // 每周3的凌晨执行一次
-  "0 0 24 12 *" // 每年圣诞节执行一次
+  "* */3 * * * * "  // 每隔3分钟执行一次
+  "0 0 0 * * 3" // 每周3的凌晨执行一次
+  "0 0 0 24 12 *" // 每年圣诞节执行一次
   ```
 
 - `type`，任务类型，支持两种配置：
