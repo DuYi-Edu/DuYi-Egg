@@ -12,7 +12,8 @@ module.exports = class extends Subscription {
 
   // subscribe 是真正定时任务执行时被运行的函数
   async subscribe() {
-    console.log("更新缓存");
+    this.logger;
+    this.ctx.logger.info("lalalalalal info");
     // this.app  this.config  this.ctx
     // ctx.app   ctx.app.config   ctx
     const key = "province";

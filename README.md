@@ -1,90 +1,106 @@
-# 编写定时任务
+> egg在内部使用`egg-logger`插件完成日志记录
 
-有的时候，我们可能会希望定期做一些事情，比如：
+# 日志路径
 
-- 定期更新缓存
-- 定期删除一些不再使用的文件
-- 定期检查数据库，删除无意义的数据
-- 定期爬取一些数据，保存到数据库
-- 等等
+默认情况下，日志保存在`根目录/logs/工程名`中
 
-尽管我们完全可以通过`setInterval`来处理该问题，但在`egg`中，可以非常简单的完成该操作，你只需要在`app/schedule`文件夹中编写各种任务即可
-
-`egg`启动后，会读取该文件夹中的所有模块，把它们的导出当做任务定期执行
-
-## 方式1
+可以通过下面的配置自定义日志路径
 
 ```js
-// app/schedule/cacheLocals
-const Subscription = require("egg").Subscription;
-
-module.exports = class extends Subscription {
-  // 通过 schedule 属性来设置定时任务的执行间隔等配置
-  static get schedule() {
-    return {
-      interval: "1m", // 1 分钟间隔
-      type: "all", // 指定所有的 worker 都需要执行
-    };
-  }
-
-  // subscribe 是真正定时任务执行时被运行的函数
-  async subscribe() {
-    console.log("更新缓存");
-    const key = "province";
-    const resp = await this.app.axios.get(`${this.config.$apiBase}/api/local`);
-    //缓存
-    this.app.redis.set(key, JSON.stringify(resp.data));
-  }
+exports.logger = {
+  dir: '/var/logs/egg-logs',
 };
 ```
 
-## 方式2
+> 建议根据环境的不同配置不同的日志路径
+>
+> 开发环境可以保持不变
+>
+> 生产环境放到系统统一的日志目录中
+
+# 日志分类
+
+egg的内置日志分为下面几类，通过相关api即可完成日志记录
+
+|    类别    |    输出目标    |        含义         |                api                 |
+| :--------- | :------------- | :------------------ | :--------------------------------- |
+| **appLogger** | **项目名-web.log** | **应用相关日志** |   **ctx.logger<br />app.logger**   |
+| coreLogger |  egg-web.log   | 框架内核、插件日志  | ctx.coreLogger<br>app.coreLogger |
+| errorLogger | common-error.log | error级别的日志均会记录到这里 | 详见日志级别 |
+| agentLogger | egg-agent.log | agent的进程日志 | agent.logger |
+
+无论使用哪个`api`记录日志，都会有对应的日志级别，分别是
 
 ```js
-module.exports = {
-  schedule: {
-    interval: '1m', // 1 分钟间隔
-    type: 'all', // 指定所有的 worker 都需要执行
-  },
-  async task(ctx) { // task 是真正定时任务执行时被运行的函数
-    console.log("更新缓存");
-    const key = "province";
-    const resp = await ctx.app.axios.get(`${ctx.app.config.$apiBase}/api/local`);
-    //缓存
-    ctx.app.redis.set(key, JSON.stringify(resp.data));
-  },
+日志对象.debug("some info"); // 记录调试信息
+日志对象.info("some info"); // 记录普通信息
+日志对象.warn("some info"); // 记录警告信息
+日志对象.error(new Error("some info")); // 记录错误信息，应该使用错误对象，否则无法得到堆栈信息
+```
+
+# 日志配置
+
+```js
+// 配置文件
+exports.logger = {
+  // 配置日志文件的目录
+  dir: '/var/logs/egg-logs',
+  // 配置不同类别的日志对应的文件名
+  appLogName: 'duyi-app-web.log',
+  coreLogName: 'egg-web.log',
+  agentLogName: 'egg-agent.log',
+  errorLogName: 'common-error.log',
+  // 配置哪些级别及其以上的日志要被记录到日志文件，设置为NONE则会关闭日志记录，默认为 INFO
+  level: 'DEBUG', 
+  // 配置哪些级别及其以上的日志要被打印到控制台，设置为NONE则会关闭日志记录，默认为 INFO
+  consoleLevel: 'DEBUG'
+  // 配置日志文件的编码，默认为 utf-8
+  encoding: 'gbk',
+  // 是否使用json格式记录日志，默认为false
+  outputJSON: true,
+};
+```
+
+# 自定义日志
+
+使用自定义日志可以增加日志的类别
+
+```js
+// 配置文件
+exports.logger = {
+  // 其他配置
+  customLogger: { // 配置自定义日志类别
+    myLogger: { // 属性名为类别名称
+      file: path.resolve(__dirname, "../logs/my-logger.log"), // 配置日志文件
+      // 配置哪些级别及其以上的日志要被记录到日志文件，设置为NONE则会关闭日志记录，默认为 INFO
+      level: 'DEBUG', 
+      // 配置哪些级别及其以上的日志要被打印到控制台，设置为NONE则会关闭日志记录，默认为 INFO
+      consoleLevel: 'DEBUG',
+      // 配置日志文件的编码，默认为 utf-8
+      encoding: 'gbk',
+      // 是否使用json格式记录日志，默认为false
+      outputJSON: true,
+      // app logger
+      formatter(meta) {
+          return `[${meta.date}] ${meta.message}`;
+      },
+      // ctx logger
+      contextFormatter(meta) {
+      	return `[${meta.date}] [${meta.ctx.method} ${meta.ctx.url}] ${meta.message}`;
+      },
+    }
+  }
 }
 ```
 
-# schedule配置
+记录自定义日志：
 
-无论使用哪一种方式，都必须提供`schedule`属性来配置任务
+```js
+app.getLogger('myLogger') // 获取全局应用日志对象
+ctx.getLogger('myLogger') // 获取上下文日志对象
+```
 
-- `interval`：字符串，描述任务执行的间隔时间。参考：https://github.com/vercel/ms
+> schedule的日志就是一个自定义日志，日志类别名为`scheduleLogger`
 
-- `cron`：字符串，任务执行的契机，它和`interval`设置一个即可。
+> 更多日志的功能参考：https://eggjs.org/zh-cn/core/logger.html
 
-  参考：https://github.com/harrisiirak/cron-parser
-
-  在线生成器：https://cron.qqe2.com/
-
-  ```js
-  "* */3 * * * * "  // 每隔3分钟执行一次
-  "0 0 0 * * 3" // 每周3的凌晨执行一次
-  "0 0 0 24 12 *" // 每年圣诞节执行一次
-  ```
-
-- `type`，任务类型，支持两种配置：
-
-  - `worker`，只有一个 worker 会执行这个定时任务，每次执行定时任务的 worker 的选择是随机的
-  - `all`，每个 worker 都会执行这个定时任务。
-
-- `immediate`，如果设置为`true`，应用启动时会立即执行该任务
-
-- `env`，数组，只有在指定的环境中才会启动该任务
-
-- `disable`，一个开关，表示任务是否被禁用
-
-
-
-> 更多关于任务的操作参考：https://eggjs.org/zh-cn/basics/schedule.html
