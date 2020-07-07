@@ -29,7 +29,7 @@ egg的内置日志分为下面几类，通过相关api即可完成日志记录
 | errorLogger | common-error.log | error级别的日志均会记录到这里 | 详见日志级别 |
 | agentLogger | egg-agent.log | agent的进程日志 | agent.logger |
 
-无论使用哪个`api`记录日志，都会有对应的日志级别，分别是
+无论使用哪个`api`记录日志，都会有对应的**日志级别**，分别是
 
 ```js
 日志对象.debug("some info"); // 记录调试信息
@@ -67,9 +67,8 @@ exports.logger = {
 
 ```js
 // 配置文件
-exports.logger = {
-  // 其他配置
-  customLogger: { // 配置自定义日志类别
+// 配置自定义日志类别
+exports.customLogger = {
     myLogger: { // 属性名为类别名称
       file: path.resolve(__dirname, "../logs/my-logger.log"), // 配置日志文件
       // 配置哪些级别及其以上的日志要被记录到日志文件，设置为NONE则会关闭日志记录，默认为 INFO
@@ -89,7 +88,6 @@ exports.logger = {
       	return `[${meta.date}] [${meta.ctx.method} ${meta.ctx.url}] ${meta.message}`;
       },
     }
-  }
 }
 ```
 

@@ -1,3 +1,4 @@
+const path = require("path");
 exports.keys = "duyi.com";
 
 exports.view = {
@@ -30,6 +31,20 @@ exports.redis = {
 exports.cluster = {
   listen: {
     port: 7000,
+  },
+};
+
+// 与日志相关的配置
+exports.logger = {
+  dir: path.resolve(__dirname, "../logs"),
+  appLogName: "duyi-app-web.log",
+  level: "DEBUG",
+  outputJSON: true,
+};
+
+exports.customLogger = {
+  scheduleLogger: {
+    file: path.resolve(__dirname, "../logs/schedule.log"),
   },
 };
 
