@@ -19,7 +19,10 @@ module.exports = class extends Controller {
     );
     if (result) {
       // 登录成功
-      this.ctx.cookies.set("token", result.token);
+      this.ctx.session.user = result.user;
+      // if(用户选择了7天保持登录){
+      //   this.ctx.session.maxAge = 7 * 24 * 3600 * 1000;
+      // }
       this.ctx.redirect("/");
     } else {
       const model = {
