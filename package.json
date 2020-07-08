@@ -4,9 +4,12 @@
   "description": "该仓库有很多的分支，可以通过下面的做法获取所有分支",
   "main": "index.js",
   "scripts": {
-    "dev": "egg-bin dev",
+    "dev": "npm run dev:egg & npm run dev:vue",
+    "dev:egg": "egg-bin dev",
+    "dev:vue": "cd client && npm run serve",
     "start": "egg-scripts --port=5001 start --title=duyi-egg",
-    "stop": "egg-scripts stop --title=duyi-egg"
+    "stop": "egg-scripts stop --title=duyi-egg",
+    "build": "cd client && npm run build"
   },
   "repository": {
     "type": "git",

@@ -1,3 +1,12 @@
+> mermaid: https://mermaidjs.github.io/#/
+
+```mermaid
+graph LR
+C --> M --> V --> C
+```
+
+
+
 # 工程目录参考
 
 ```shell
