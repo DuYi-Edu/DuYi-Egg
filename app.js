@@ -6,4 +6,5 @@ module.exports = (app) => {
     globalTitle: "地区数据库",
   };
   app.axios = require("axios").default;
+
 };

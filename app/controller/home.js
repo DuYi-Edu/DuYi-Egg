@@ -2,7 +2,8 @@ const Controller = require("egg").Controller;
 
 module.exports = class extends Controller {
   async index() {
-    this.ctx.logger.debug("不要访问首页");
+    // throw new Error("hahahah");
+    this.ctx.status = 404;
     const provinces = await this.service.local.getProvinces();
     var model = {
       title: "首页",

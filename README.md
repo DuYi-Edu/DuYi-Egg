@@ -1,98 +1,81 @@
-> egg 在内部使用 `egg-session` 插件完成session功能，`egg-session`插件在内部使用`koa-session`完成session功能
-
-# 使用session
-
-```js
-ctx.session.prop = value;
-```
-
-注意点：
-
-- 设置的属性不能以`_`开头
-- 属性名不能为`isNew`
-- 具体原因见`koa-session`源码：https://github.com/koajs/session/blob/master/lib/session.js
-
-# 原理
-
-`koa-session`和普通session不同，它在默认情况下，是将session中保存的数据序列化后加密保存到客户端的`cookie`中
-
-
-
-传统的`session`处理模式
-
-```mermaid
-sequenceDiagram
-浏览器->>服务器: 请求
-activate 服务器
-Note right of 服务器: ctx.session.a = 1
-Note right of 服务器: 生成sid
-Note right of 服务器: 将数据保存到服务器
-deactivate 服务器
-服务器->>浏览器: set-cookie:sid
-浏览器->>服务器: 请求，附带cookie
-activate 服务器
-Note right of 服务器: 通过sid获取到数据
-Note right of 服务器: 获取到 ctx.session.a
-deactivate 服务器
-```
-
-
-
-`egg-session`的处理模式
-
-```mermaid
-sequenceDiagram
-浏览器->>服务器: 请求
-activate 服务器
-Note right of 服务器: ctx.session.a = 1
-Note right of 服务器: 序列化加密：xxxxxx
-deactivate 服务器
-服务器->>浏览器: set-cookie:xxxxx
-浏览器->>服务器: 请求，附带cookie
-activate 服务器
-Note right of 服务器: 解密反序列化: {a:1}
-Note right of 服务器: 获取到 ctx.session.a
-deactivate 服务器
-```
-
-# 配置
-
-```js
-exports.session = {
-  key: 'EGG_SESS', // cookie的键
-  maxAge: 24 * 3600 * 1000, // cookie的过期时间
-  httpOnly: true, // 该cookie是否仅允许http传输，不允许js获取
-  encrypt: true, // 该cookie的内容是否要加密
-  renew: false, // 是否每次请求后进一步延长cookie的过期时间
-};
-```
-
-
-
-虽然不推荐，不过你可以将这种session模式转换为传统模式，只需要设置session的存储模式即可
+# 使用 koa 的异常处理模式
 
 ```js
 // app.js
-module.exports = app => {
-  // 自定义session存储模式
-  app.sessionStore = {
-    // 根据指定的键得到对应的session值
-    async get (key) {
-      // return value;
-    },
-    // 根据指定的键、值、过期时间（毫秒），设置session
-    async set (key, value, maxAge) {
-      
-    },
-    // 摧毁session调用的方法
-    async destroy (key) {
-      // destroy key
-    },
-  };
+module.exports = (app) => {
+  app.on("error", (err, ctx) => { // 和 koa 的异常处理类似
+    console.log(err, ctx);
+  });
 };
 ```
 
-你也可以直接使用插件`egg-session-redis`，安装后，启用它即可
+# 使用 egg 的异常处理模式
 
-**注意：一旦选择了将 Session 存入到外部存储中，就意味着系统将强依赖于这个外部存储，当它挂了的时候，我们就完全无法使用 Session 相关的功能了。因此我们更推荐大家只将必要的信息存储在 Session 中，保持 Session 的精简并使用默认的 Cookie 存储，用户级别的缓存不要存储在 Session 中。**
+为了更方便的处理常见的应用场景，egg内部使用了`egg-onerror`插件来处理异常
+
+默认情况下，`egg-onerror`会对异常做出以下处理
+
+| 请求需求的格式 | 环境             | errorPageUrl 是否配置 | 返回内容                                             |
+| -------------- | ---------------- | --------------------- | ---------------------------------------------------- |
+| HTML & TEXT    | local & unittest | -                     | onerror 自带的错误页面，展示详细的错误信息           |
+| HTML & TEXT    | 其他             | 是                    | 重定向到 errorPageUrl                                |
+| HTML & TEXT    | 其他             | 否                    | onerror 自带的没有错误信息的简单错误页（不推荐）     |
+| JSON & JSONP   | local & unittest | -                     | JSON 对象或对应的 JSONP 格式响应，带详细的错误信息   |
+| JSON & JSONP   | 其他             | -                     | JSON 对象或对应的 JSONP 格式响应，不带详细的错误信息 |
+
+针对该插件，可以做出以下配置：
+
+```js
+// config/config.default.js
+exports.onerror = { // 配置 egg-onerror 插件
+  errorPageUrl: '/error',// 线上页面发生异常时，重定向到这个地址
+  all(err, ctx) {
+    // 在此处定义针对所有响应类型的错误处理方法
+    // 注意，定义了 config.all 之后，其他错误处理方法不会再生效
+    ctx.body = 'error';
+    ctx.status = 500;
+  },
+  html(err, ctx) {
+    // html hander
+    ctx.body = '<h3>error</h3>';
+    ctx.status = 500;
+  },
+  json(err, ctx) {
+    // json hander
+    ctx.body = { message: 'error' };
+    ctx.status = 500;
+  }
+};
+```
+
+
+
+## 关于404
+
+框架并不会将服务端返回的 404 状态当做异常来处理
+
+如果开发者对404的状态码没有给予响应体，则egg会自动给予响应体，它的方式是：
+
+- 当请求被框架判定为需要 JSON 格式的响应时，会返回一段 JSON：
+
+  ```json
+  { "message": "Not Found" }
+  ```
+
+- 当请求被框架判定为需要 HTML 格式的响应时，会返回一段 HTML：
+
+  ```html
+  <h1>404 Not Found</h1>
+  ```
+
+  
+
+框架支持通过配置，将默认的 HTML 请求的 404 响应重定向到指定的页面。
+
+```js
+// config/config.default.js
+exports.notfound = {
+  pageUrl: '/404',
+};
+```
 
