@@ -14,8 +14,9 @@ exports.view = {
 // 安全配置
 exports.security = {
   csrf: {
-    enable: false,
+    enable: true,
   },
+  domainWhiteList: ["www.domain.com"], // 配置shtml的域名白名单
 };
 
 // 配置redis
@@ -72,6 +73,12 @@ exports.onerror = {
 
 exports.notfound = {
   pageUrl: "/404",
+};
+
+exports.helper = {
+  shtml: {
+    whiteList: { a: ["title", "href"] }, // 配置shtml的白名单
+  },
 };
 
 exports.$apiBase = "http://study.yuanjin.tech";

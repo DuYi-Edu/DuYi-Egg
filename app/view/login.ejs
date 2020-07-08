@@ -2,6 +2,7 @@
 <link rel="stylesheet" href="/public/login.css" />
 <h1>登录页的内容</h1>
 <form action="" method="POST">
+  <input type="hidden" name="_csrf" value="<%=ctx.csrf %>">
   <div class="form-item">
     <label>账号：</label>
     <input type="text" name="loginId" value="<%= loginId %>" />
@@ -21,5 +22,4 @@
   </div>
 </form>
 <script src="/public/login.js"></script>
-
 <% include common/footer.ejs %>
