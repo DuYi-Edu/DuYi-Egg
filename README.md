@@ -1,126 +1,114 @@
-`egg`内部开启了`egg-security`插件，用于提供一套成熟的安全实践
+# 工程目录参考
 
-# xss 防护
+```shell
+|- app # egg 代码
+|- client # vue 代码
+|- config # egg 配置
+```
 
-`egg-security`在`helper`中扩展了一些方法，用于`xss`防护
 
-1. `helper.escape`，该方法会对整个字符串进行XSS过滤，转换目标字符串中的危险字符
 
-   ```js
-   const str = '<a href="/">XSS</a><script>alert("abc") </script>';
-   console.log(ctx.helper.escape(str));
-   // => &lt;a href=&quot;/&quot;&gt;XSS&lt;/a&gt;&lt;script&gt;alert(&quot;abc&quot;) &lt;/script&gt;
-   ```
+# 开发阶段
 
-   这对在页面中显示用户字符很有用
+各自运行即可
 
-2. `helper.sjs`，该方法会将字符串中进行JS Encode，将某些特殊字符，转换为十六进制的编码形式`\x编码`
+```mermaid
+graph LR
+vue-->|npm run serve|端口:8080
+egg-->|npm run dev|端口:7001
+```
 
-   ```js
-   const foo = '"hello"';
-   
-   // 未使用 sjs
-   console.log(`var foo = "${foo}";`);
-   // => var foo = ""hello"";
-   
-   // 使用 sjs
-   console.log(`var foo = "${ctx.helper.sjs(foo)}";`);
-   // => var foo = "\\x22hello\\x22";
-   ```
+为了方便启动，可以对`egg`的`package.json`稍作改动：
 
-   这对在JS中动态加入用户字符很有用
+```json
+{
+  "scripts": {
+    "dev": "npm run dev:egg & npm run dev:vue",
+    "dev:egg": "egg-bin dev",
+    "dev:vue": "cd client && npm run serve",
+  }
+}
+```
 
-3. `helper.shtml`，过滤一段`html`字符串
 
-   ```js
-   const value = `<a t=1 title="a" href="http://www.domain.com">google</a><script>evilcode…</script>`;
-   console.log(ctx.helper.shtml(value));
-   // => <a title="a">google</a>&lt;script&gt;evilcode…&lt;/script&gt;
-   ```
 
-   可见，对于某些标签和属性，是可以保留的，这取决于白名单的设置，而对于白名单之外的标签和属性，不会保留或者进行编码处理
+# 部署阶段
 
-   另外，针对某些元素的链接，可以配置域名白名单
+部署后，需要让`egg`服务器承载对单页应用的访问，因此有两个问题要解决：
+
+1. 如何把`vue`的打包结果放到`egg`服务器中
+
+   我们可以把`vue`的打包结果当做是静态资源，放到`egg`的`app/public`目录中即可
 
    ```js
-   // config/config.default.js
-   
-   
-   exports.helper = {
-     shtml: {
-       whiteList: { a: ["title", "href"] }, // 配置shtml的白名单
-       domainWhiteList: ["www.domain.com"], // 配置shtml的域名白名单
-     },
+   // client/vue.config.js
+   const path = require("path");
+   module.exports = {
+     // 选项...
+     outputDir: path.resolve(__dirname, "../app/public"),
+     devServer: {
+       proxy: {
+         '/api': {
+           target: 'http://127.0.0.1:7001'
+         }
+       }
+     }
    };
    ```
 
-   注意 shtml 的适用场景，一般是针对来自用户的富文本输入，切忌滥用。 此类场景一般是论坛、评论系统等，即便是论坛等如果不支持 HTML 内容输入，也不要使用此 Helper，直接使用 `escape` 即可。
+   由于默认情况下，`egg`对静态资源的访问有前缀`/public`，为了避免差异，可以去掉该前缀
 
+   ```js
+   // config/config.default.js
+   exports.static = {
+     prefix: "/",
+   };
+   ```
 
+   同时，设置`/package.json`中的命令：
 
-# csrf 防护
+   ```js
+   "scripts": {
+     "build": "cd client && npm run build"
+   },
+   ```
 
-`egg-security`选择的是使用`csrf token`进行 csrf 防护
+   这样，在根目录中运行`npm run build`即可打包`vue`到`app/public`中
 
-原理：
+2. 如何实现，访问任何地址都定向到单个页面
 
-```mermaid
-sequenceDiagram
-浏览器 ->> 我方服务器: get 请求
-Note right of  我方服务器: 生成token
-Note right of  我方服务器: token加到cookie中
-Note right of  我方服务器: token加到表单中
-我方服务器 ->> 浏览器: 表单页面
-浏览器 ->> 我方服务器: post 请求 
-Note right of 我方服务器: 对比token验证
-我方服务器 ->> 浏览器: 成功
-```
+   这一点其实很简单，仅需配置视图目录和路由即可
 
-如何防护：
+   ```js
+   // config/config.default.js 
+   exports.view = { 
+     root: [ 
+       path.resolve(__dirname, "../app/public"),
+       path.resolve(__dirname, "../app/view"),
+     ].join(","), // 将 app/public 目录作为模板目录
+     // 其他配置
+   };
+   ```
 
-```mermaid
-sequenceDiagram
-浏览器 ->> 敌方服务器: get 请求
-敌方服务器 ->> 浏览器: 表单页面
-浏览器 ->> 我方服务器: post 请求 
-Note right of 我方服务器: 对比token验证
-我方服务器 ->> 浏览器: 失败
-```
+   ```js
+   // app/router.js
+   module.exports = (app) => {
+     const { router } = app;
+     // 针对 api 的配置（略）
+   	// 若上面无法匹配到api，即匹配到 home.index
+     router.all("*", "home.index")
+   };
+   ```
 
-egg提供了`ctx.csrf`来获取可以与`cookie`匹配的token
+   ```js
+   // app/controller/home
+   const Controller = require("egg").Controller;
+   
+   module.exports = class extends Controller {
+     async index() {
+       await this.ctx.render("index.html"); // 渲染 index.html 模板
+     }
+   };
+   ```
 
-在下次请求时，仅需将该token放置到`query`或`body`中的`_csrf`字段即可，例如
-
-```ejs
-<!-- 放置到 query 中 -->
-<form action="?_csrf=<%=ctx.csrf %>" method="POST">
-  ...
-</form>
-
-<!-- 放置到 body 中 -->
-<form action="" method="POST">
-  <input type="hidden" name="_csrf" value="<%=ctx.csrf %>">
-  ...
-</form>
-```
-
-对于`ajax`请求，可以直接在js中获取到`cookie`中的`token`，放置到`body`或`query`即可
-
-也可以针对字段名进行配置
-
-```js
-// config/config.default.js
-exports.security = {
-  csrf: {
-    cookieName: 'csrfToken', // Cookie 中的字段名，默认为 csrfToken
-    bodyName: "_csrf",
-    queryName: "_csrf"
-  },
-};
-```
-
-由于`egg-security`制作了中间件，因此，对于security中的配置，可以使用中间件的模式，即是说，下面的配置同样适用：
-
-- match
-- ignore
-- enable
+   
