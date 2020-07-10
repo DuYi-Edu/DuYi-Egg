@@ -1,27 +1,51 @@
-- application， `extend/application.js`
-- context， `extend/context.js`
-- request，`extend/request.js`
-- response，`extend/response.js`
-- helper，`extend/helper.js`
+# 插件文件夹结构
 
-
-
-# 扩展决策树
-
-```mermaid
-graph TD
-opInContext[一定在请求处理中发生吗]
-opOfContext[继续确定扩展目标]
-setInRequest{{扩展request}}
-setInResponse{{扩展response}}
-setInContext{{扩展context}}
-setInHelper{{扩展helper}}
-setInApplication{{扩展application}}
-opInContext-->|是|opOfContext
-opOfContext-->|获取请求中的信息|setInRequest
-opOfContext-->|设置响应中的信息|setInResponse
-opOfContext-->|其他|setInContext
-opOfContext-->|其他|setInHelper
-opInContext-->|否|setInApplication
+```
+插件文件夹
+├── package.json
+├── app.js (可选)
+├── app
+│   ├── extend (可选)
+│   |   ├── helper.js (可选)
+│   |   ├── request.js (可选)
+│   |   ├── response.js (可选)
+│   |   ├── context.js (可选)
+│   |   ├── application.js (可选)
+│   ├── service (可选)
+│   └── middleware (可选)
+├── config
+|   ├── config.default.js
+│   ├── config.prod.js
+|   ├── config.local.js (可选)
+└── test
 ```
 
+插件文件夹可以独立成一个工程，也可以放到主工程的`lib/plugin`中
+
+
+# 插件的注意事项
+
+值得注意的是：
+
+- 插件没有独立的 router 和 controller
+
+- 插件没有 `plugin.js`
+
+- 插件需要在 `package.json` 中的 `eggPlugin` 节点指定插件特有的信息：
+
+  - `{String} name` - 插件名（必须配置），具有唯一性，配置依赖关系时会指定依赖插件的 name。
+  - `{Array} dependencies` - 当前插件强依赖的插件列表（如果依赖的插件没找到，应用启动失败）。
+  - `{Array} optionalDependencies` - 当前插件的可选依赖插件列表（如果依赖的插件未开启，只会 warning，不会影响应用启动）。
+  - `{Array} env` - 只有在指定运行环境才能开启
+
+  ```json
+  {
+    "name": "egg-rpc",
+    "eggPlugin": {
+      "name": "rpc",
+      "dependencies": [ "registry" ],
+      "optionalDependencies": [ "vip" ],
+      "env": [ "local", "test", "unittest", "prod" ]
+    }
+  }
+  ```
