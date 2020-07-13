@@ -1,15 +1,17 @@
-const Controller = require("egg").Controller;
-
-module.exports = class extends Controller {
+module.exports = class extends require("egg").Controller {
   async index() {
-    const value = `<a t=1 title="a" href="http://www.domain.com">google</a><script>evilcode…</script>`;
-    console.log(this.ctx.helper.shtml(value));
+    const model = {};
+    if (this.ctx.isAuthenticated()) {
+      // 已经授权过了
+      model.isLogin = true;
+    } else {
+      model.isLogin = false;
+    }
+    await this.ctx.render("home.ejs", model);
+  }
 
-    const provinces = await this.service.local.getProvinces();
-    var model = {
-      title: "首页",
-      provinces,
-    };
-    await this.ctx.render("home", model);
+  async loginOut() {
+    await this.ctx.logout();
+    this.ctx.redirect("/");
   }
 };

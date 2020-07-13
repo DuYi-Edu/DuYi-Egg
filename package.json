@@ -4,9 +4,7 @@
   "description": "该仓库有很多的分支，可以通过下面的做法获取所有分支",
   "main": "index.js",
   "scripts": {
-    "dev": "egg-bin dev",
-    "start": "egg-scripts --port=5001 start --title=duyi-egg",
-    "stop": "egg-scripts stop --title=duyi-egg"
+    "dev": "egg-bin dev"
   },
   "repository": {
     "type": "git",
@@ -19,10 +17,9 @@
   },
   "homepage": "https://github.com/DuYi-Edu/DuYi-Egg#readme",
   "dependencies": {
-    "axios": "^0.19.2",
     "egg": "^2.26.1",
-    "egg-redis": "^2.4.0",
-    "egg-scripts": "^2.13.0",
+    "egg-passport": "^2.1.1",
+    "egg-passport-github": "^1.0.0",
     "egg-view-ejs": "^2.0.1"
   },
   "devDependencies": {

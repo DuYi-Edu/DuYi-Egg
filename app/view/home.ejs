@@ -1,10 +1,21 @@
-<% include common/header.ejs %>
-
-<h1>你好，<%= user.nickname %></h1>
-<ul>
-  <% provinces.forEach(p => { %>
-  <li><%= p.simpleName %></li>
-  <% }) %>
-</ul>
-
-<% include common/footer.ejs %>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>首页</h1>
+    <% if (isLogin) { %>
+    <div>
+      用户信息：
+      <img src="<%=ctx.user.photo %>" alt="" width="200" />
+      <span><%= ctx.user.displayName %></span>
+    </div>
+    <a href="/loginout">退出</a>
+    <% } else { %>
+    <a href="/passport/github">使用github登录</a>
+    <% } %>
+  </body>
+</html>

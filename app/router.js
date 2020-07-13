@@ -1,9 +1,7 @@
 module.exports = (app) => {
   const { router } = app;
-  const verifyToken = app.middleware.verifyToken({}, app);
-  router.get("/", verifyToken, "home.index");
-  router.get("/login", "user.login");
-  router.post("/login", "user.handleLogin");
-  router.get("/error", "error.index");
-  router.get("/404", "error.notFound");
+
+  router.get("/", "home.index");
+  router.get("/loginout", "home.loginOut");
+  app.passport.mount("github");
 };
