@@ -3,4 +3,7 @@ module.exports = {
   foo() {
     return "bar";
   },
+  locals: {
+    globalTitle: "地区数据库",
+  },
 };
